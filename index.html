@@ -2,312 +2,46 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PWA Stack Manager Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bouton Vibrant</title>
     <style>
-        :root {
-            --bg: #0d1117;
-            --card: #161b22;
-            --accent: #58a6ff;
-            --gold: #ffd43b;
-            --border: #30363d;
-            --text: #c9d1d9;
-            --html-color: #ff7b72;
-            --json-color: #d2a8ff;
-            --js-color: #79c0ff;
-        }
-
         body {
-            font-family: -apple-system, system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
         }
-
-        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; }
-        .btn-tool {
-            flex: 1; padding: 12px; font-size: 0.8rem; background: #21262d;
-            border: 1px solid var(--border); color: var(--text);
-            border-radius: 8px; cursor: pointer; font-weight: bold;
+        button {
+            padding: 20px 40px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
         }
-
-        #search-box {
-            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
-            background: #010409; color: var(--gold); margin-bottom: 20px; box-sizing: border-box; outline: none;
+        button:active {
+            background-color: #45a049;
         }
-
-        .item-list { display: flex; flex-direction: column; gap: 10px; }
-        .item-card {
-            display: grid; grid-template-columns: 1fr 45px 45px 45px 45px;
-            gap: 8px; align-items: center; background: var(--card);
-            padding: 12px; border-radius: 12px; border: 1px solid var(--border);
-        }
-
-        .btn-title {
-            background: none; border: none; color: #fff; text-align: left;
-            font-weight: bold; cursor: pointer; overflow: hidden; 
-            text-overflow: ellipsis; font-size: 1rem;
-        }
-
-        .btn-copy {
-            height: 38px; width: 38px; border-radius: 8px; border: none;
-            display: flex; align-items: center; justify-content: center;
-            background: #21262d; cursor: pointer; font-weight: 800; transition: 0.1s;
-        }
-
-        .copy-1 { color: var(--html-color); border: 1px solid rgba(255,123,114,0.3); }
-        .copy-2 { color: var(--json-color); border: 1px solid rgba(210,168,255,0.3); }
-        .copy-3 { color: var(--js-color); border: 1px solid rgba(121,192,255,0.3); }
-        
-        .btn-copy:active { background: #3b424b; transform: scale(0.95); }
-        .btn-del { color: #f85149; background: none; border: none; font-size: 1.2rem; cursor: pointer; }
-
-        #editor-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: none; z-index: 1000; padding: 15px; overflow-y: auto;
-        }
-
-        .editor-window {
-            max-width: 600px; margin: 10px auto; background: var(--card);
-            padding: 20px; border-radius: 15px; border: 1px solid var(--border);
-        }
-
-        .group { margin-bottom: 15px; }
-        .group label { display: block; font-size: 0.75rem; color: #8b949e; margin-bottom: 6px; font-family: monospace; }
-
-        input, textarea {
-            width: 100%; background: #010409; border: 1px solid var(--border);
-            color: #aff5b4; padding: 10px; border-radius: 6px; box-sizing: border-box;
-            font-family: monospace; font-size: 0.85rem;
-        }
-
-        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .btn-save { background: #238636; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-cancel { background: #30363d; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; }
-
-        .fab {
-            position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px;
-            border-radius: 30px; background: var(--gold); color: #000;
-            font-size: 30px; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 99;
-        }
-
-        #toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: var(--accent); color: white; padding: 10px 25px; border-radius: 30px; 
-            display: none; z-index: 2000; font-weight: bold;
-        }
-
-        footer { text-align: center; color: #484f58; font-size: 0.7rem; padding: 30px; margin-top: auto; }
     </style>
-
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#000000">
-    <link rel="apple-touch-icon" href="icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
-    <div id="toast">Copié !</div>
-
-    <div class="toolbar">
-        <button class="btn-tool" onclick="exportData()">📤 EXPORTER</button>
-        <button class="btn-tool" onclick="document.getElementById('importFile').click()">📥 IMPORTER</button>
-        <input type="file" id="importFile" hidden accept=".json" onchange="importData(event)">
-    </div>
-
-    <input type="text" id="search-box" placeholder="Rechercher un projet..." oninput="render()">
-
-    <div id="main-list" class="item-list"></div>
-
-    <div id="editor-overlay">
-        <div class="editor-window">
-            <div class="group"><label>TITRE</label><input type="text" id="inp-title"></div>
-            <div class="group"><label style="color:var(--html-color)">index.html</label><textarea id="inp-html" rows="8"></textarea></div>
-            <div class="group"><label style="color:var(--json-color)">manifest.json</label><textarea id="inp-json" rows="5"></textarea></div>
-            <div class="group"><label style="color:var(--js-color)">sw.js</label><textarea id="inp-js" rows="5"></textarea></div>
-            <div class="actions">
-                <button class="btn-cancel" onclick="closeEdit()">Annuler</button>
-                <button class="btn-save" onclick="save()">Sauvegarder</button>
-            </div>
-        </div>
-    </div>
-
-    <button class="fab" onclick="openEdit('new')">+</button>
-
-    <footer>Made by Brahim LAICHE 2026 paris</footer>
+    <h1>Clique sur le bouton</h1>
+    
+    <button onclick="vibrer()">
+        🔄 Faire vibrer
+    </button>
 
     <script>
-        const STORAGE_KEY = "PWA_WORKSPACE_STABLE_2026";
-        let projects = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null;
-
-        // Persistance renforcée
-        if (navigator.storage && navigator.storage.persist) {
-            navigator.storage.persist();
-        }
-
-        // --- EXPORT NOMMÉ : Repositories backup ---
-        function exportData() {
-            if (projects.length === 0) return showToast("Aucune donnée");
-            
-            try {
-                const dataStr = JSON.stringify(projects, null, 2);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                
-                link.style.display = 'none';
-                link.href = url;
-                // Modification du nom ici
-                link.download = `Repositories backup.json`;
-                
-                document.body.appendChild(link);
-                link.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                }, 150);
-
-                showToast("Backup téléchargée !");
-            } catch (err) {
-                alert("Erreur export : " + err);
-            }
-        }
-
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (Array.isArray(imported)) {
-                        if (confirm("Écraser les données par cette backup ?")) {
-                            projects = imported;
-                            localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-                            render();
-                            showToast("Backup chargée !");
-                        }
-                    }
-                } catch (err) { alert("Erreur fichier."); }
-            };
-            reader.readAsText(file);
-            event.target.value = ''; 
-        }
-
-        function render() {
-            const filter = document.getElementById('search-box').value.toLowerCase();
-            const container = document.getElementById('main-list');
-            container.innerHTML = '';
-            projects.forEach(p => {
-                if(p.title.toLowerCase().includes(filter)) {
-                    const card = document.createElement('div');
-                    card.className = 'item-card';
-                    card.innerHTML = `
-                        <button class="btn-title" onclick="openEdit('${p.id}')">${p.title}</button>
-                        <button class="btn-copy copy-1" onclick="forceCopy('${p.id}', 'html')">1</button>
-                        <button class="btn-copy copy-2" onclick="forceCopy('${p.id}', 'json')">2</button>
-                        <button class="btn-copy copy-3" onclick="forceCopy('${p.id}', 'js')">3</button>
-                        <button class="btn-del" onclick="remove('${p.id}')">✕</button>
-                    `;
-                    container.appendChild(card);
-                }
-            });
-        }
-
-        window.openEdit = (id) => {
-            currentId = id;
-            const p = projects.find(x => x.id === id) || { title:'', html:'', json:'', js:'' };
-            document.getElementById('inp-title').value = p.title;
-            document.getElementById('inp-html').value = p.html;
-            document.getElementById('inp-json').value = p.json;
-            document.getElementById('inp-js').value = p.js;
-            document.getElementById('editor-overlay').style.display = 'block';
-        };
-
-        window.closeEdit = () => document.getElementById('editor-overlay').style.display = 'none';
-
-        window.save = () => {
-            const data = {
-                title: document.getElementById('inp-title').value.trim() || "Sans titre",
-                html: document.getElementById('inp-html').value,
-                json: document.getElementById('inp-json').value,
-                js: document.getElementById('inp-js').value
-            };
-            if (currentId === 'new') {
-                projects.push({ id: 'ID-' + Date.now(), ...data });
+        function vibrer() {
+            // Vibre pendant 200 millisecondes
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
             } else {
-                const idx = projects.findIndex(x => x.id === currentId);
-                if (idx !== -1) projects[idx] = { id: currentId, ...data };
+                alert("La vibration n'est pas supportée sur cet appareil/navigateur.");
             }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-            closeEdit();
-            render();
-            showToast("Sauvegardé !");
-        };
-
-        window.forceCopy = (id, field) => {
-            const p = projects.find(x => x.id === id);
-            const text = p[field];
-            if (!text || text.trim() === "") return showToast("Vide");
-            navigator.clipboard.writeText(text).then(() => {
-                const names = { html: 'index.html', json: 'manifest.json', js: 'sw.js' };
-                showToast(names[field] + " copié");
-            });
-        };
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.innerText = msg; t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 1500);
-        }
-
-        window.remove = (id) => {
-            if(confirm("Supprimer ?")) {
-                projects = projects.filter(x => x.id !== id);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-                render();
-            }
-        };
-
-        render();
-    </script>
-
-    <style>
-        #pwaInstallBtn {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: #000000; color: white; border: none; padding: 12px 24px;
-            border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            display: none; z-index: 10000; font-weight: bold; cursor: pointer;
-        }
-    </style>
-    <button id="pwaInstallBtn">Installer l'application</button>
-    <script>
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('pwaInstallBtn').style.display = 'block';
-        });
-        document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                deferredPrompt = null;
-                document.getElementById('pwaInstallBtn').style.display = 'none';
-            }
-        });
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error:', err));
-            });
         }
     </script>
+
 </body>
 </html>
