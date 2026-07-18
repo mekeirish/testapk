@@ -29,7 +29,7 @@ jobs:
           rsync -av --exclude='capacitor-app' --exclude='.git' --exclude='.github' ./ capacitor-app/www/
           cd capacitor-app
           npm init -y
-          npm install @capacitor/core @capacitor/android
+          npm install @capacitor/core @capacitor/android @capacitor/haptics @capacitor/local-notifications
           npm install -D @capacitor/cli
           cat > capacitor.config.json << JSONEOF
           {
@@ -47,7 +47,6 @@ jobs:
           cd capacitor-app/www
           MANIFEST="../android/app/src/main/AndroidManifest.xml"
           
-          # Fonction pour ajouter une permission si absente
           add_permission() {
             local perm="$1"
             if ! grep -q "android.permission.$perm" "$MANIFEST"; then
@@ -58,43 +57,111 @@ jobs:
             fi
           }
           
-          # 1. Permissions par défaut (toujours utiles)
+          rm -f .need_*_shim
+          
           add_permission "INTERNET"
           add_permission "ACCESS_NETWORK_STATE"
           
-          # 2. Détection des API utilisées
-          # Vibration
           if grep -rq -E "navigator\.vibrate|\.vibrate\(" .; then
             add_permission "VIBRATE"
+            touch .need_vibrate_shim
             echo "   (détecté: navigator.vibrate ou .vibrate() dans le code)"
           fi
           
-          # Géolocalisation
           if grep -rq -E "navigator\.geolocation|getCurrentPosition|watchPosition" .; then
             add_permission "ACCESS_FINE_LOCATION"
             add_permission "ACCESS_COARSE_LOCATION"
+            touch .need_geolocation_shim
             echo "   (détecté: API de géolocalisation utilisée)"
           fi
           
-          # Caméra (getUserMedia avec video)
           if grep -rq -E "getUserMedia.*video|video.*getUserMedia" .; then
             add_permission "CAMERA"
+            touch .need_camera_shim
             echo "   (détecté: getUserMedia avec video)"
           fi
           
-          # Micro (getUserMedia avec audio)
           if grep -rq -E "getUserMedia.*audio|audio.*getUserMedia" .; then
             add_permission "RECORD_AUDIO"
+            touch .need_microphone_shim
             echo "   (détecté: getUserMedia avec audio)"
           fi
           
-          # Notifications
           if grep -rq -E "new Notification\(|Notification\.requestPermission" .; then
             add_permission "POST_NOTIFICATIONS"
+            touch .need_notification_shim
             echo "   (détecté: Notification API utilisée)"
           fi
           
           echo "🔐 Analyse des permissions terminée"
+
+      - name: 🌉 Injection des shims JS-vers-natif
+        run: |
+          cd capacitor-app/www
+          NEED_VIBRATE=false
+          NEED_NOTIFICATION=false
+          [ -f .need_vibrate_shim ] && NEED_VIBRATE=true
+          [ -f .need_notification_shim ] && NEED_NOTIFICATION=true
+          if [ "$NEED_VIBRATE" = "false" ] && [ "$NEED_NOTIFICATION" = "false" ]; then
+            echo "ℹ️ Aucun shim nécessaire"
+          else
+            echo "📝 Génération de shims.js..."
+            cat > shims.js << 'SHIMEOF'
+          (function() {
+            var Capacitor = window.Capacitor;
+            var isNative = !!(Capacitor && Capacitor.Plugins);
+            console.log('🔌 Shims: mode', isNative ? 'natif' : 'web');
+          })();
+          SHIMEOF
+            if [ "$NEED_VIBRATE" = "true" ]; then
+              cat >> shims.js << 'VIBEOF'
+          (function() {
+            var Capacitor = window.Capacitor;
+            if (Capacitor && Capacitor.Plugins && Capacitor.Plugins.Haptics) {
+              navigator.vibrate = function(pattern) {
+                var duration = (typeof pattern === 'number') ? pattern
+                  : (Array.isArray(pattern) && pattern.length > 0) ? pattern[0] : 200;
+                try { Capacitor.Plugins.Haptics.vibrate({ duration: duration }); } catch (e) {}
+                return true;
+              };
+              console.log('🔌 Shim Vibration actif');
+            }
+          })();
+          VIBEOF
+              echo "✅ Shim vibration ajouté"
+            fi
+            if [ "$NEED_NOTIFICATION" = "true" ]; then
+              cat >> shims.js << 'NOTIFEOF'
+          (function() {
+            var Capacitor = window.Capacitor;
+            if (Capacitor && Capacitor.Plugins && Capacitor.Plugins.LocalNotifications) {
+              window.Notification = function(title, options) {
+                options = options || {};
+                var id = Date.now() + Math.floor(Math.random() * 1000);
+                try {
+                  Capacitor.Plugins.LocalNotifications.schedule({
+                    notifications: [{ id: id, title: title || '', body: options.body || '', schedule: { at: new Date() } }]
+                  });
+                } catch (e) {}
+                return { title: title, body: options.body, close: function() {} };
+              };
+              window.Notification.requestPermission = function() {
+                if (Capacitor.Plugins.LocalNotifications.requestPermissions) {
+                  return Capacitor.Plugins.LocalNotifications.requestPermissions().then(function(result) {
+                    return (result && result.display === 'granted') ? 'granted' : 'denied';
+                  });
+                }
+                return Promise.resolve('granted');
+              };
+              window.Notification.permission = 'granted';
+              console.log('🔌 Shim Notification actif');
+            }
+          })();
+          NOTIFEOF
+              echo "✅ Shim notification ajouté"
+            fi
+            echo "✅ shims.js généré avec succès"
+          fi
 
       - name: 🔌 Téléchargement et injection chirurgicale du Bridge
         run: |
@@ -108,6 +175,24 @@ jobs:
               cp ../node_modules/@capacitor/core/dist/capacitor.js capacitor.js
             else
               touch capacitor.js
+              echo "⚠️ capacitor.js introuvable"
+            fi
+            # Copie des plugins JS
+            if [ -f "../node_modules/@capacitor/haptics/dist/plugin.cjs.js" ]; then
+              cp ../node_modules/@capacitor/haptics/dist/plugin.cjs.js haptics-plugin.js
+            elif [ -f "../node_modules/@capacitor/haptics/dist/plugin.js" ]; then
+              cp ../node_modules/@capacitor/haptics/dist/plugin.js haptics-plugin.js
+            else
+              touch haptics-plugin.js
+              echo "⚠️ JS du plugin Haptics introuvable"
+            fi
+            if [ -f "../node_modules/@capacitor/local-notifications/dist/plugin.cjs.js" ]; then
+              cp ../node_modules/@capacitor/local-notifications/dist/plugin.cjs.js localnotifications-plugin.js
+            elif [ -f "../node_modules/@capacitor/local-notifications/dist/plugin.js" ]; then
+              cp ../node_modules/@capacitor/local-notifications/dist/plugin.js localnotifications-plugin.js
+            else
+              touch localnotifications-plugin.js
+              echo "⚠️ JS du plugin LocalNotifications introuvable"
             fi
             node -e "
               const fs = require('fs');
@@ -116,13 +201,29 @@ jobs:
               let parts = content.split(/<\/body>/i);
               if (parts.length > 1) {
                 let lastPart = parts.pop();
-                let scripts = '<script src="capacitor.js"><\/script>\n<script src="bridge.js"><\/script>\n</body>';
+                let scripts = '<script src="capacitor.js"><\/script>\n';
+                scripts += '<script src="haptics-plugin.js"><\/script>\n';
+                scripts += '<script src="localnotifications-plugin.js"><\/script>\n';
+                if (fs.existsSync('shims.js')) {
+                  scripts += '<script src="shims.js"><\/script>\n';
+                }
+                scripts += '<script src="bridge.js"><\/script>\n</body>';
                 let newContent = parts.join('</body>') + scripts + lastPart;
                 fs.writeFileSync(htmlFile, newContent, 'utf8');
                 console.log('✅ Bridge injecté chirurgicalement');
+                if (fs.existsSync('shims.js')) {
+                  console.log('✅ shims.js également injecté');
+                }
               } else {
                 console.log('⚠️ Aucun </body> trouvé, injection à la fin');
-                fs.appendFileSync(htmlFile, '<script src="capacitor.js"><\/script>\n<script src="bridge.js"><\/script>\n');
+                let append = '<script src="capacitor.js"><\/script>\n';
+                append += '<script src="haptics-plugin.js"><\/script>\n';
+                append += '<script src="localnotifications-plugin.js"><\/script>\n';
+                if (fs.existsSync('shims.js')) {
+                  append += '<script src="shims.js"><\/script>\n';
+                }
+                append += '<script src="bridge.js"><\/script>\n';
+                fs.appendFileSync(htmlFile, append);
               }
             "
           fi
