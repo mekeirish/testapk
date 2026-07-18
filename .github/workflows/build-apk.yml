@@ -62,7 +62,7 @@ jobs:
           add_permission "INTERNET"
           add_permission "ACCESS_NETWORK_STATE"
           
-          # 2. Détection des API utilisées
+          # 2. Détection des API utilisées (regex avec caractères spéciaux échappés)
           # Vibration
           if grep -rq -E "navigator.vibrate|.vibrate(" .; then
             add_permission "VIBRATE"
