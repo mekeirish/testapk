@@ -6,74 +6,39 @@
     <title>Bouton Vibrant</title>
     <style>
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .container {
+            font-family: Arial, sans-serif;
             text-align: center;
+            margin-top: 100px;
         }
-
         button {
-            padding: 25px 50px;
-            font-size: 22px;
-            font-weight: bold;
-            background: linear-gradient(45deg, #ff4757, #ff6b81);
+            padding: 20px 40px;
+            font-size: 20px;
+            background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 50px;
+            border-radius: 10px;
             cursor: pointer;
-            box-shadow: 0 10px 25px rgba(255, 71, 87, 0.4);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
         }
-
-        button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(255, 71, 87, 0.5);
-            background: linear-gradient(45deg, #ff3746, #ff5a6f);
-        }
-
         button:active {
-            transform: scale(0.95);
-            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.3);
-        }
-
-        .icon {
-            font-size: 28px;
-            transition: transform 0.3s ease;
-        }
-
-        button:active .icon {
-            transform: rotate(360deg);
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Appuie pour faire vibrer !</h1>
-        
-        <button onclick="vibrer()">
-            <span class="icon">📳</span>
-            Faire vibrer
-        </button>
-    </div>
+    <h1>Clique sur le bouton</h1>
+    
+    <button onclick="vibrer()">
+        🔄 Faire vibrer
+    </button>
 
     <script>
         function vibrer() {
+            // Vibre pendant 200 millisecondes
             if (navigator.vibrate) {
-                navigator.vibrate(250); // Vibration un peu plus longue
+                navigator.vibrate(200);
             } else {
-                alert("La vibration n'est pas supportée sur cet appareil.");
+                alert("La vibration n'est pas supportée sur cet appareil/navigateur.");
             }
         }
     </script>
