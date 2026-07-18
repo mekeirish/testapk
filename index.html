@@ -3,77 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bouton Vibrant</title>
+    <title>Bouton Vibration + Notification</title>
     <style>
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .container {
+            font-family: Arial, sans-serif;
             text-align: center;
+            margin-top: 100px;
         }
-
         button {
-            padding: 25px 50px;
-            font-size: 22px;
-            font-weight: bold;
-            background: linear-gradient(45deg, #ff4757, #ff6b81);
+            padding: 20px 40px;
+            font-size: 20px;
+            background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 50px;
+            border-radius: 10px;
             cursor: pointer;
-            box-shadow: 0 10px 25px rgba(255, 71, 87, 0.4);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
         }
-
-        button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(255, 71, 87, 0.5);
-            background: linear-gradient(45deg, #ff3746, #ff5a6f);
-        }
-
         button:active {
-            transform: scale(0.95);
-            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.3);
+            background-color: #45a049;
         }
-
-        .icon {
-            font-size: 28px;
-            transition: transform 0.3s ease;
-        }
-
-        button:active .icon {
-            transform: rotate(360deg);
+        #status {
+            margin-top: 30px;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Appuie pour faire vibrer !</h1>
-        
-        <button onclick="vibrer()">
-            <span class="icon">📳</span>
-            Faire vibrer
-        </button>
-    </div>
+    <h1>Bouton Vibration + Notification</h1>
+    
+    <button onclick="declencherAction()">🔄 Vibrer + Notification dans 30s</button>
+
+    <p id="status"></p>
 
     <script>
-        function vibrer() {
+        async function declencherAction() {
+            const status = document.getElementById("status");
+            status.textContent = "Action déclenchée...";
+
+            // === VIBRATION ===
             if (navigator.vibrate) {
-                navigator.vibrate(250); // Vibration un peu plus longue
-            } else {
-                alert("La vibration n'est pas supportée sur cet appareil.");
+                navigator.vibrate(200);
+            }
+
+            // === NOTIFICATION ===
+            try {
+                // Toujours demander la permission explicitement
+                const permission = await Notification.requestPermission();
+                
+                if (permission !== "granted") {
+                    status.textContent = "❌ Permission de notification refusée";
+                    return;
+                }
+
+                // Programmer la notification dans 30 secondes
+                setTimeout(() => {
+                    try {
+                        const notification = new Notification("Rappel", {
+                            body: "Tu as cliqué sur le bouton il y a 30 secondes !",
+                            icon: "https://via.placeholder.com/128", // optionnel
+                            tag: "rappel-unique" // évite les doublons
+                        });
+
+                        // Optionnel : fermer la notification après quelques secondes
+                        setTimeout(() => {
+                            notification.close();
+                        }, 8000);
+
+                    } catch (e) {
+                        console.error("Erreur notification :", e);
+                    }
+                }, 30000);
+
+                status.textContent = "✅ Vibration faite + Notification programmée dans 30 secondes";
+
+            } catch (err) {
+                console.error(err);
+                status.textContent = "❌ Erreur lors de la demande de permission";
             }
         }
     </script>
